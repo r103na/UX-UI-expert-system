@@ -3,11 +3,20 @@ from PIL import Image
 from sklearn.cluster import KMeans
 import numpy as np
 import cv2
+
+
 def preprocess_image_for_ocr(img):
     img_array = np.array(img)
     gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
-    new_image = Image.fromarray(gray)
+
+    # Увеличение контраста
+    alpha = 3.0
+    beta = 0
+    contrast_img = cv2.convertScaleAbs(gray, alpha=alpha, beta=beta)
+
+    new_image = Image.fromarray(contrast_img)
     return new_image
+
 
 def perform_ocr_analysis(image: Image.Image):
     custom_config = r'--oem 3 --psm 4'
@@ -17,16 +26,20 @@ def perform_ocr_analysis(image: Image.Image):
     data = pytesseract.image_to_data(new_image, config=custom_config, output_type=pytesseract.Output.DICT)
     return text, data
 
+
 def relative_luminance(rgb):
     def channel_lum(c):
         c = c / 255.0
         return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
     r, g, b = rgb
     return 0.2126 * channel_lum(r) + 0.7152 * channel_lum(g) + 0.0722 * channel_lum(b)
+
 
 def contrast_ratio(lum1, lum2):
     L1, L2 = max(lum1, lum2), min(lum1, lum2)
     return (L1 + 0.05) / (L2 + 0.05)
+
 
 def check_text_contrast(img_array: np.ndarray, ocr_data):
     warnings = []
@@ -41,7 +54,7 @@ def check_text_contrast(img_array: np.ndarray, ocr_data):
         if len(text) <= 1:
             continue
 
-        if conf > 50 and text:
+        if conf >= 50 and text:
             x, y, w, h = ocr_data["left"][i], ocr_data["top"][i], ocr_data["width"][i], ocr_data["height"][i]
             region = img_array[y:y + h, x:x + w]
 
@@ -59,8 +72,8 @@ def check_text_contrast(img_array: np.ndarray, ocr_data):
                 labels = kmeans.labels_
 
                 counts = np.bincount(labels)
-                text_rgb = cluster_centers[np.argmin(counts)]   # меньшая группа — предположительно текст
-                bg_rgb = cluster_centers[np.argmax(counts)]   # большая группа — фон
+                text_rgb = cluster_centers[np.argmin(counts)]  # меньшая группа — предположительно текст
+                bg_rgb = cluster_centers[np.argmax(counts)]  # большая группа — фон
 
                 text_lum = relative_luminance(text_rgb)
                 bg_lum = relative_luminance(bg_rgb)
@@ -76,6 +89,7 @@ def check_text_contrast(img_array: np.ndarray, ocr_data):
                 continue
 
     return warnings
+
 
 def analyze_clutter(ocr_data, image_size):
     width, height = image_size
