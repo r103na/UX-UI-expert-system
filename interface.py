@@ -3,7 +3,6 @@ from PIL import Image
 from sklearn.cluster import KMeans
 import numpy as np
 import cv2
-
 def preprocess_image_for_ocr(img):
     img_array = np.array(img)
     gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
@@ -11,9 +10,11 @@ def preprocess_image_for_ocr(img):
     return new_image
 
 def perform_ocr_analysis(image: Image.Image):
+    custom_config = r'--oem 3 --psm 4'
+
     new_image = preprocess_image_for_ocr(image)
-    text = pytesseract.image_to_string(new_image, lang="eng+rus")
-    data = pytesseract.image_to_data(new_image, output_type=pytesseract.Output.DICT)
+    text = pytesseract.image_to_string(new_image, config=custom_config, lang="eng+rus")
+    data = pytesseract.image_to_data(new_image, config=custom_config, output_type=pytesseract.Output.DICT)
     return text, data
 
 def relative_luminance(rgb):
@@ -36,6 +37,10 @@ def check_text_contrast(img_array: np.ndarray, ocr_data):
             continue
 
         text = ocr_data["text"][i].strip()
+
+        if len(text) <= 1:
+            continue
+
         if conf > 50 and text:
             x, y, w, h = ocr_data["left"][i], ocr_data["top"][i], ocr_data["width"][i], ocr_data["height"][i]
             region = img_array[y:y + h, x:x + w]

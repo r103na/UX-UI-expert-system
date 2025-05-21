@@ -1,10 +1,7 @@
 import streamlit as st
-import pytesseract
 from PIL import Image
 import numpy as np
 from interface import perform_ocr_analysis, check_text_contrast, analyze_clutter
-
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # ========== Текст рекомендаций ==========
 good_text = "#### ✅ Ваш интерфейс соответствует рекомендациям UX"
