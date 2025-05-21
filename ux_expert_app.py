@@ -1,7 +1,6 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-import pytesseract
 from interface import perform_ocr_analysis, check_text_contrast, analyze_clutter
 
 # ========== Текст рекомендаций ==========
