@@ -3,4 +3,5 @@ streamlit
 pillow
 numpy
 opencv-python
+cv2
 scikit-learn
