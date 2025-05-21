@@ -3,7 +3,7 @@ from PIL import Image
 import numpy as np
 import pytesseract
 from sklearn.cluster import KMeans
-import cv2
+from cv2 import convertScaleAbs, cvtColor, COLOR_BGR2GRAY
 
 # ========== Текст рекомендаций ==========
 def preprocess_image_for_ocr(img):
@@ -12,9 +12,9 @@ def preprocess_image_for_ocr(img):
     # Увеличение контраста
     alpha = 2.5
     beta = 0
-    contrast_img = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
+    contrast_img = convertScaleAbs(img_array, alpha=alpha, beta=beta)
 
-    gray = cv2.cvtColor(contrast_img, cv2.COLOR_BGR2GRAY)
+    gray = cvtColor(contrast_img, COLOR_BGR2GRAY)
 
     new_image = Image.fromarray(gray)
     return new_image
