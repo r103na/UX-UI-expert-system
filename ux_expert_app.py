@@ -26,8 +26,12 @@ if uploaded_file:
 
     img_array = np.array(image)
     contrast_warnings = check_text_contrast(img_array, ocr_data)
-    for w in contrast_warnings:
-        st.warning(w)
+
+    if not contrast_warnings:
+        st.markdown("Текст прошел проверку на контрастность")
+    else:
+        for w in contrast_warnings:
+            st.warning(w)
 
     # Перегрузка интерфейса
     clutter_info = analyze_clutter(ocr_data, image.size)

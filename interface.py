@@ -8,6 +8,14 @@ def perform_ocr_analysis(image: Image.Image):
     return text, data
 
 def check_text_contrast(img_array: np.ndarray, ocr_data):
+    # Считаем контрастность
+    def relative_luminance(rgb):
+        def channel_lum(c):
+            c = c / 255.0
+            return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = rgb
+        return 0.2126 * channel_lum(r) + 0.7152 * channel_lum(g) + 0.0722 * channel_lum(b)
+
     warnings = []
     for i in range(len(ocr_data["text"])):
         try:
@@ -15,15 +23,34 @@ def check_text_contrast(img_array: np.ndarray, ocr_data):
         except ValueError:
             continue
 
-        if conf > 50 and ocr_data["text"][i].strip():
+        text = ocr_data["text"][i].strip()
+
+        if conf > 50 and text:
             x, y, w, h = ocr_data["left"][i], ocr_data["top"][i], ocr_data["width"][i], ocr_data["height"][i]
             region = img_array[y:y + h, x:x + w]
-            brightness = np.mean(region)
+            print(region.ndim, region.shape[2])
 
-            if brightness < 60 or brightness > 195:
+            if region.ndim == 3:
+                if region.shape[2] == 4:
+                    region = region[:, :, :3]
+                avg_color = np.mean(region.reshape(-1, 3), axis=0)
+                print(f"Average color: {avg_color}")
+            else:
+                continue  # Необрабатываемый формат
+
+            text_rgb = [0, 0, 0]  # предположим, что текст черный
+            text_lum = relative_luminance(text_rgb)
+            bg_lum = relative_luminance(avg_color)
+
+            L1, L2 = max(text_lum, bg_lum), min(text_lum, bg_lum)
+            contrast = (L1 + 0.05) / (L2 + 0.05)
+            print(contrast)
+
+            if contrast < 4.5:
                 warnings.append(
-                    f"⚠️ Низкий контраст текста '{ocr_data['text'][i]}'. Яркость: {brightness:.1f}"
+                    f"⚠️ Низкий контраст текста '{text}': {contrast:.2f} (менее 4.5)"
                 )
+
     return warnings
 
 def analyze_clutter(ocr_data, image_size):
