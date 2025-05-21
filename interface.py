@@ -7,14 +7,15 @@ import cv2
 
 def preprocess_image_for_ocr(img):
     img_array = np.array(img)
-    gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
 
     # Увеличение контраста
-    alpha = 3.0
+    alpha = 4
     beta = 0
-    contrast_img = cv2.convertScaleAbs(gray, alpha=alpha, beta=beta)
+    contrast_img = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
 
-    new_image = Image.fromarray(contrast_img)
+    gray = cv2.cvtColor(contrast_img, cv2.COLOR_BGR2GRAY)
+
+    new_image = Image.fromarray(gray)
     return new_image
 
 
@@ -24,7 +25,16 @@ def perform_ocr_analysis(image: Image.Image):
     new_image = preprocess_image_for_ocr(image)
     text = pytesseract.image_to_string(new_image, config=custom_config, lang="eng+rus")
     data = pytesseract.image_to_data(new_image, config=custom_config, output_type=pytesseract.Output.DICT)
-    return text, data
+
+    # Фильтрация: удаляем все записи с текстом длиной 1 или меньше
+    filtered_data = {key: [] for key in data.keys()}
+
+    for i in range(len(data["text"])):
+        if len(data["text"][i].strip()) > 1:
+            for key in data.keys():
+                filtered_data[key].append(data[key][i])
+
+    return text, filtered_data
 
 
 def relative_luminance(rgb):
@@ -43,7 +53,10 @@ def contrast_ratio(lum1, lum2):
 
 def check_text_contrast(img_array: np.ndarray, ocr_data):
     warnings = []
+
     for i in range(len(ocr_data["text"])):
+        confidence_rate = 60
+
         try:
             conf = int(ocr_data["conf"][i])
         except ValueError:
@@ -51,10 +64,7 @@ def check_text_contrast(img_array: np.ndarray, ocr_data):
 
         text = ocr_data["text"][i].strip()
 
-        if len(text) <= 1:
-            continue
-
-        if conf >= 50 and text:
+        if conf >= confidence_rate and text:
             x, y, w, h = ocr_data["left"][i], ocr_data["top"][i], ocr_data["width"][i], ocr_data["height"][i]
             region = img_array[y:y + h, x:x + w]
 
@@ -114,9 +124,11 @@ def analyze_clutter(ocr_data, image_size):
 
     # Коэффициент кластеризации: расстояния между блоками
     def avg_distance(boxes):
+
         if len(boxes) < 2:
             return 0
         distances = []
+
         for i in range(len(boxes)):
             for j in range(i + 1, len(boxes)):
                 x1, y1, _, _ = boxes[i]
@@ -129,14 +141,18 @@ def analyze_clutter(ocr_data, image_size):
 
     # Критерии перегруженности
     clutter_score = 0
+
     if num_elements > 20:
         clutter_score += 1
-    if num_elements > 50:
+    elif num_elements > 50:
         clutter_score += 2
-    if area_ratio > 0.15:
+
+    if area_ratio > 0.1:
         clutter_score += 1
-    if text_density > 0.000025:
+
+    if text_density > 0.00025:
         clutter_score += 1
+
     if cluster_score < 0.1:
         clutter_score += 1
 

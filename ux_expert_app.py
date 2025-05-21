@@ -25,7 +25,7 @@ if uploaded_file:
     contrast_warnings = check_text_contrast(img_array, ocr_data)
 
     if not contrast_warnings:
-        st.markdown("Текст прошел проверку на контрастность")
+        st.success("Текст прошел проверку на контрастность")
     else:
         for w in contrast_warnings:
             st.warning(w)
@@ -37,7 +37,10 @@ if uploaded_file:
     st.write(f"Площадь текста к общей: {clutter_info['area_ratio']}")
     st.write(f"Плотность текста: {clutter_info['text_density']}")
     st.write(f"Кластеризация: {clutter_info['cluster_score']}")
-    st.markdown("⚠ **Интерфейс перегружен**" if clutter_info["is_cluttered"] else "✅ Интерфейс не перегружен")
+    if clutter_info["is_cluttered"]:
+        st.warning("⚠ **Интерфейс перегружен**")
+    else:
+        st.success("✅ Интерфейс не перегружен")
 
     # Общие выводы
     st.header("Общие рекомендации")
@@ -65,4 +68,4 @@ if uploaded_file:
         st.markdown("📤 Уберите редко используемые кнопки или переместите их в меню «ещё».")
 
     if not (contrast_warnings or clutter_info["is_cluttered"]):
-        st.markdown(good_text)
+        st.success(good_text)
