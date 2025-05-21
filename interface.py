@@ -9,7 +9,7 @@ def preprocess_image_for_ocr(img):
     img_array = np.array(img)
 
     # Увеличение контраста
-    alpha = 4
+    alpha = 2.5
     beta = 0
     contrast_img = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
 
@@ -142,12 +142,12 @@ def analyze_clutter(ocr_data, image_size):
     # Критерии перегруженности
     clutter_score = 0
 
-    if num_elements > 20:
+    if num_elements > 25:
         clutter_score += 1
     elif num_elements > 50:
         clutter_score += 2
 
-    if area_ratio > 0.1:
+    if area_ratio > 0.05:
         clutter_score += 1
 
     if text_density > 0.00025:

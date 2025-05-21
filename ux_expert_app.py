@@ -26,7 +26,7 @@ if uploaded_file:
     contrast_warnings = check_text_contrast(img_array, ocr_data)
 
     if not contrast_warnings:
-        st.success("Текст прошел проверку на контрастность")
+        st.success("✅ Текст прошел проверку на контрастность")
     else:
         for w in contrast_warnings:
             st.warning(w)
