@@ -21,20 +21,20 @@ def preprocess_image_for_ocr(img):
 
 def perform_ocr_analysis(image: Image.Image):
     custom_config = r'--oem 3 --psm 4'
+    min_text_length = 1
 
     new_image = preprocess_image_for_ocr(image)
-    text = pytesseract.image_to_string(new_image, config=custom_config, lang="eng+rus")
     data = pytesseract.image_to_data(new_image, config=custom_config, output_type=pytesseract.Output.DICT)
 
     # Фильтрация: удаляем все записи с текстом длиной 1 или меньше
     filtered_data = {key: [] for key in data.keys()}
 
     for i in range(len(data["text"])):
-        if len(data["text"][i].strip()) > 1:
+        if len(data["text"][i].strip()) > min_text_length:
             for key in data.keys():
                 filtered_data[key].append(data[key][i])
 
-    return text, filtered_data
+    return filtered_data
 
 
 def relative_luminance(rgb):
